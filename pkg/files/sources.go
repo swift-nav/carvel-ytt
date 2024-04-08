@@ -55,6 +55,7 @@ type LocalSource struct {
 
 func NewLocalSource(path, dir string) LocalSource { return LocalSource{path, dir} }
 
+// Description return LocalSource's (i.e. file's) path
 func (s LocalSource) Description() string { return fmt.Sprintf("file %s", s.path) }
 
 func (s LocalSource) RelativePath() (string, error) {
