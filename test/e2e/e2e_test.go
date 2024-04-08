@@ -292,6 +292,21 @@ new_thing: new
 	})
 }
 
+func TestProcessingFileWithError(t *testing.T) {
+	t.Run("invalidYamlFile", func(t *testing.T) {
+		tempInputDir, err := os.MkdirTemp(os.TempDir(), "ytt-check-dir")
+		require.NoError(t, err)
+		err = os.WriteFile(tempInputDir+"/config.yaml", []byte(`apiVersion: "v1"
+key value`), 0666)
+		require.NoError(t, err)
+		defer os.Remove(tempInputDir)
+
+		actualOutput := runYttExpectingError(t, testInputFiles{tempInputDir + "/config.yaml"}, nil, nil)
+		expectedOutput := "ytt: Error: Unmarshaling YAML template 'file " + tempInputDir + "/config.yaml': yaml: line 3: could not find expected ':'\n"
+		require.Equal(t, expectedOutput, actualOutput)
+	})
+}
+
 func TestCheckDirectoryOutput(t *testing.T) {
 	tempOutputDir, err := os.MkdirTemp(os.TempDir(), "ytt-check-dir")
 	require.NoError(t, err)

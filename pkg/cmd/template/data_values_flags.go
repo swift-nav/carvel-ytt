@@ -168,7 +168,7 @@ func (s *DataValuesFlags) file(fullPath string, strict bool) ([]*datavalues.Enve
 		}
 		docSet, err := yamlmeta.NewDocumentSetFromBytes(contents, docSetOpts)
 		if err != nil {
-			return nil, fmt.Errorf("Unmarshaling YAML data values file '%s': %s", dvFile.RelativePath(), err)
+			return nil, fmt.Errorf("Unmarshaling YAML data values file '%s': %s", dvFile.Description(), err)
 		}
 
 		for _, doc := range docSet.Items {
