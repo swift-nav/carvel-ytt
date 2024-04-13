@@ -83,7 +83,6 @@ type ScalarType struct {
 	Position      *filepos.Position
 	defaultValue  interface{}
 	documentation documentation
-	validations   map[string]interface{}
 }
 
 type AnyType struct {

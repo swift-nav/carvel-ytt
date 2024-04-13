@@ -108,7 +108,12 @@ func (a *validationRun) VisitWithParent(value yamlmeta.Node, parent yamlmeta.Nod
 	return nil
 }
 
-func (v NodeValidation) HasSimpleMinLength() (int64, bool) { // TODO check when
+// HasSimpleMinLength indicates presence of min length validation and its associated value.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleMinLength() (int64, bool) {
+	if v.kwargs.when != nil {
+		return 0, false
+	}
 	if v.kwargs.minLength != nil {
 		value, ok := v.kwargs.minLength.Int64()
 		if ok {
@@ -118,7 +123,12 @@ func (v NodeValidation) HasSimpleMinLength() (int64, bool) { // TODO check when
 	return 0, false
 }
 
+// HasSimpleMaxLength indicates presence of max length validation and its associated value.
+// Returns false if validation is conditional (via when=).
 func (v NodeValidation) HasSimpleMaxLength() (int64, bool) {
+	if v.kwargs.when != nil {
+		return 0, false
+	}
 	if v.kwargs.maxLength != nil {
 		value, ok := v.kwargs.maxLength.Int64()
 		if ok {
@@ -128,7 +138,12 @@ func (v NodeValidation) HasSimpleMaxLength() (int64, bool) {
 	return 0, false
 }
 
+// HasSimpleMin indicates presence of min validation and its associated value.
+// Returns false if validation is conditional (via when=).
 func (v NodeValidation) HasSimpleMin() (interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
 	if v.kwargs.min != nil {
 		value, err := core.NewStarlarkValue(v.kwargs.min).AsGoValue()
 		if err == nil {
@@ -138,7 +153,12 @@ func (v NodeValidation) HasSimpleMin() (interface{}, bool) {
 	return nil, false
 }
 
+// HasSimpleMax indicates presence of max validation and its associated value.
+// Returns false if validation is conditional (via when=).
 func (v NodeValidation) HasSimpleMax() (interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
 	if v.kwargs.max != nil {
 		value, err := core.NewStarlarkValue(v.kwargs.max).AsGoValue()
 		if err == nil {
@@ -148,7 +168,12 @@ func (v NodeValidation) HasSimpleMax() (interface{}, bool) {
 	return nil, false
 }
 
+// HasSimpleOneOf indicates presence of one-of validation and its allowed values.
+// Returns false if validation is conditional (via when=).
 func (v NodeValidation) HasSimpleOneOf() ([]interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
 	if v.kwargs.oneOf != nil {
 		enum := []interface{}{}
 		iter := starlark.Iterate(v.kwargs.oneOf)
