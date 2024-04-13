@@ -553,6 +553,9 @@ foo:
   #@schema/validation min=0, max=100
   range_key: 0
 
+  #@schema/validation min=-1.1, max=100.1
+  range_float_key: 2.2
+
   #@schema/default 10
   #@schema/validation min=0
   min_key: 0
@@ -569,6 +572,10 @@ foo:
 
   #@schema/validation one_of=["one", "two", "three"]
   one_of_strings: "one"
+
+  #@schema/type any=True
+  #@schema/validation one_of=["one", 2, 3.3, {}]
+  one_of_mixed: "one"
 `
 		expected := `openapi: 3.0.0
 info:
@@ -590,6 +597,12 @@ components:
               default: 10
               minimum: 0
               maximum: 100
+            range_float_key:
+              type: number
+              format: float
+              default: 2.2
+              minimum: -1.1
+              maximum: 100.1
             min_key:
               type: integer
               default: 10
@@ -617,6 +630,14 @@ components:
               - one
               - two
               - three
+            one_of_mixed:
+              nullable: true
+              default: one
+              enum:
+              - one
+              - 2
+              - 3.3
+              - {}
 `
 
 		filesToProcess := files.NewSortedFiles([]*files.File{
