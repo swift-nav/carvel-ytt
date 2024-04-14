@@ -567,6 +567,13 @@ foo:
   #@schema/validation min_len=1, max_len=10
   string_key: ""
 
+  #@schema/validation min_len=3, max_len=4
+  array_key:
+  - ""
+
+  #@schema/validation min_len=2, max_len=5
+  map_key: {}
+
   #@schema/validation one_of=[1,2,3]
   one_of_integers: 1
 
@@ -616,6 +623,20 @@ components:
               default: ""
               minLength: 1
               maxLength: 10
+            array_key:
+              type: array
+              items:
+                type: string
+                default: ""
+              default: []
+              minItems: 3
+              maxItems: 4
+            map_key:
+              type: object
+              additionalProperties: false
+              properties: {}
+              minProperties: 2
+              maxProperties: 5
             one_of_integers:
               type: integer
               default: 1

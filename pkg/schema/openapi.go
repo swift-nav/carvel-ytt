@@ -26,8 +26,12 @@ const (
 	defaultProp            = "default"
 	minProp                = "minimum"
 	maxProp                = "maximum"
-	minLenProp             = "minLength"
+	minLenProp             = "minLength" // for strings
 	maxLenProp             = "maxLength"
+	minItemsProp           = "minItems" // for arrays
+	maxItemsProp           = "maxItems"
+	minPropertiesProp      = "minProperties" // for objects
+	maxPropertiesProp      = "maxProperties"
 	enumProp               = "enum"
 )
 
@@ -48,7 +52,11 @@ var propOrder = map[string]int{
 	maxProp:                13,
 	minLenProp:             14,
 	maxLenProp:             15,
-	enumProp:               16,
+	minItemsProp:           16,
+	maxItemsProp:           17,
+	minPropertiesProp:      18,
+	maxPropertiesProp:      19,
+	enumProp:               20,
 }
 
 type openAPIKeys []*yamlmeta.MapItem
@@ -206,10 +214,30 @@ func convertValidations(schemaVal Type) []*yamlmeta.MapItem {
 	var items []*yamlmeta.MapItem
 
 	if value, found := validation.HasSimpleMinLength(); found {
-		items = append(items, &yamlmeta.MapItem{Key: minLenProp, Value: value})
+		containedValue := schemaVal.GetValueType()
+		switch containedValue.(type) {
+		case *ArrayType:
+			items = append(items, &yamlmeta.MapItem{Key: minItemsProp, Value: value})
+		case *MapType:
+			items = append(items, &yamlmeta.MapItem{Key: minPropertiesProp, Value: value})
+		default:
+			if containedValue.String() == "string" {
+				items = append(items, &yamlmeta.MapItem{Key: minLenProp, Value: value})
+			}
+		}
 	}
 	if value, found := validation.HasSimpleMaxLength(); found {
-		items = append(items, &yamlmeta.MapItem{Key: maxLenProp, Value: value})
+		containedValue := schemaVal.GetValueType()
+		switch containedValue.(type) {
+		case *ArrayType:
+			items = append(items, &yamlmeta.MapItem{Key: maxItemsProp, Value: value})
+		case *MapType:
+			items = append(items, &yamlmeta.MapItem{Key: maxPropertiesProp, Value: value})
+		default:
+			if containedValue.String() == "string" {
+				items = append(items, &yamlmeta.MapItem{Key: maxLenProp, Value: value})
+			}
+		}
 	}
 	if value, found := validation.HasSimpleMin(); found {
 		items = append(items, &yamlmeta.MapItem{Key: minProp, Value: value})
