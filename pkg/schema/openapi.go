@@ -101,14 +101,14 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 	switch typedValue := schemaVal.(type) {
 	case *DocumentType:
 		result := o.calculateProperties(typedValue.GetValueType())
-		result.Items = append(result.Items, convertValidations(typedValue)...)
+		result.Items = append(result.Items, o.convertValidations(typedValue)...)
 		sort.Sort(openAPIKeys(result.Items))
 		return result
 
 	case *MapType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
-		items = append(items, convertValidations(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: typeProp, Value: "object"})
 		items = append(items, &yamlmeta.MapItem{Key: additionalPropsProp, Value: false})
 
@@ -124,14 +124,14 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 	case *MapItemType:
 		result := o.calculateProperties(typedValue.GetValueType())
-		result.Items = append(result.Items, convertValidations(typedValue)...)
+		result.Items = append(result.Items, o.convertValidations(typedValue)...)
 		sort.Sort(openAPIKeys(result.Items))
 		return result
 
 	case *ArrayType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
-		items = append(items, convertValidations(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: typeProp, Value: "array"})
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
@@ -144,8 +144,8 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 	case *ScalarType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
-		items = append(items, convertValidations(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
 		typeString := o.openAPITypeFor(typedValue)
@@ -160,8 +160,8 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 	case *NullType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
-		items = append(items, convertValidations(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: nullableProp, Value: true})
 
 		properties := o.calculateProperties(typedValue.GetValueType())
@@ -172,8 +172,8 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 	case *AnyType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
-		items = append(items, convertValidations(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: nullableProp, Value: true})
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
@@ -185,7 +185,7 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 	}
 }
 
-func collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
+func (*OpenAPIDocument) collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
 	var items []*yamlmeta.MapItem
 	if typedValue.GetTitle() != "" {
 		items = append(items, &yamlmeta.MapItem{Key: titleProp, Value: typedValue.GetTitle()})
@@ -205,7 +205,7 @@ func collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
 }
 
 // convertValidations converts the starlark validation map to a list of OpenAPI properties
-func convertValidations(schemaVal Type) []*yamlmeta.MapItem {
+func (*OpenAPIDocument) convertValidations(schemaVal Type) []*yamlmeta.MapItem {
 	validation := schemaVal.GetValidation()
 	if validation == nil {
 		return nil
@@ -251,7 +251,7 @@ func convertValidations(schemaVal Type) []*yamlmeta.MapItem {
 	return items
 }
 
-func (o *OpenAPIDocument) openAPITypeFor(astType *ScalarType) string {
+func (*OpenAPIDocument) openAPITypeFor(astType *ScalarType) string {
 	switch astType.ValueType {
 	case StringType:
 		return "string"
