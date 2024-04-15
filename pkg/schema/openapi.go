@@ -26,8 +26,12 @@ const (
 	defaultProp            = "default"
 	minProp                = "minimum"
 	maxProp                = "maximum"
-	minLenProp             = "minLength"
+	minLenProp             = "minLength" // for strings
 	maxLenProp             = "maxLength"
+	minItemsProp           = "minItems" // for arrays
+	maxItemsProp           = "maxItems"
+	minPropertiesProp      = "minProperties" // for objects
+	maxPropertiesProp      = "maxProperties"
 	enumProp               = "enum"
 )
 
@@ -48,22 +52,20 @@ var propOrder = map[string]int{
 	maxProp:                13,
 	minLenProp:             14,
 	maxLenProp:             15,
-	enumProp:               16,
+	minItemsProp:           16,
+	maxItemsProp:           17,
+	minPropertiesProp:      18,
+	maxPropertiesProp:      19,
+	enumProp:               20,
 }
 
 type openAPIKeys []*yamlmeta.MapItem
 
-func (o openAPIKeys) Len() int {
-	return len(o)
-}
-
+func (o openAPIKeys) Len() int { return len(o) }
 func (o openAPIKeys) Less(i, j int) bool {
 	return propOrder[o[i].Key.(string)] < propOrder[o[j].Key.(string)]
 }
-
-func (o openAPIKeys) Swap(i, j int) {
-	o[i], o[j] = o[j], o[i]
-}
+func (o openAPIKeys) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
 
 // OpenAPIDocument holds the document type used for creating an OpenAPI document
 type OpenAPIDocument struct {
@@ -98,25 +100,38 @@ func (o *OpenAPIDocument) AsDocument() *yamlmeta.Document {
 func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.Map {
 	switch typedValue := schemaVal.(type) {
 	case *DocumentType:
-		return o.calculateProperties(typedValue.GetValueType())
+		result := o.calculateProperties(typedValue.GetValueType())
+		result.Items = append(result.Items, o.convertValidations(typedValue)...)
+		sort.Sort(openAPIKeys(result.Items))
+		return result
+
 	case *MapType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: typeProp, Value: "object"})
 		items = append(items, &yamlmeta.MapItem{Key: additionalPropsProp, Value: false})
 
 		var properties []*yamlmeta.MapItem
 		for _, i := range typedValue.Items {
-			mi := yamlmeta.MapItem{Key: i.Key, Value: o.calculateProperties(i.GetValueType())}
+			mi := yamlmeta.MapItem{Key: i.Key, Value: o.calculateProperties(i)}
 			properties = append(properties, &mi)
 		}
 		items = append(items, &yamlmeta.MapItem{Key: propertiesProp, Value: &yamlmeta.Map{Items: properties}})
 
 		sort.Sort(items)
 		return &yamlmeta.Map{Items: items}
+
+	case *MapItemType:
+		result := o.calculateProperties(typedValue.GetValueType())
+		result.Items = append(result.Items, o.convertValidations(typedValue)...)
+		sort.Sort(openAPIKeys(result.Items))
+		return result
+
 	case *ArrayType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: typeProp, Value: "array"})
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
@@ -126,15 +141,15 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 		sort.Sort(items)
 		return &yamlmeta.Map{Items: items}
+
 	case *ScalarType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
 		typeString := o.openAPITypeFor(typedValue)
 		items = append(items, &yamlmeta.MapItem{Key: typeProp, Value: typeString})
-
-		items = append(items, convertValidations(typedValue.GetValidationMap())...)
 
 		if typedValue.String() == "float" {
 			items = append(items, &yamlmeta.MapItem{Key: formatProp, Value: "float"})
@@ -142,9 +157,11 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 		sort.Sort(items)
 		return &yamlmeta.Map{Items: items}
+
 	case *NullType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: nullableProp, Value: true})
 
 		properties := o.calculateProperties(typedValue.GetValueType())
@@ -152,20 +169,23 @@ func (o *OpenAPIDocument) calculateProperties(schemaVal interface{}) *yamlmeta.M
 
 		sort.Sort(items)
 		return &yamlmeta.Map{Items: items}
+
 	case *AnyType:
 		var items openAPIKeys
-		items = append(items, collectDocumentation(typedValue)...)
+		items = append(items, o.collectDocumentation(typedValue)...)
+		items = append(items, o.convertValidations(typedValue)...)
 		items = append(items, &yamlmeta.MapItem{Key: nullableProp, Value: true})
 		items = append(items, &yamlmeta.MapItem{Key: defaultProp, Value: typedValue.GetDefaultValue()})
 
 		sort.Sort(items)
 		return &yamlmeta.Map{Items: items}
+
 	default:
 		panic(fmt.Sprintf("Unrecognized type %T", schemaVal))
 	}
 }
 
-func collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
+func (*OpenAPIDocument) collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
 	var items []*yamlmeta.MapItem
 	if typedValue.GetTitle() != "" {
 		items = append(items, &yamlmeta.MapItem{Key: titleProp, Value: typedValue.GetTitle()})
@@ -185,26 +205,53 @@ func collectDocumentation(typedValue Type) []*yamlmeta.MapItem {
 }
 
 // convertValidations converts the starlark validation map to a list of OpenAPI properties
-func convertValidations(validations map[string]interface{}) []*yamlmeta.MapItem {
+func (*OpenAPIDocument) convertValidations(schemaVal Type) []*yamlmeta.MapItem {
+	validation := schemaVal.GetValidation()
+	if validation == nil {
+		return nil
+	}
+
 	var items []*yamlmeta.MapItem
-	for key, value := range validations {
-		switch key {
-		case "min":
-			items = append(items, &yamlmeta.MapItem{Key: minProp, Value: value})
-		case "max":
-			items = append(items, &yamlmeta.MapItem{Key: maxProp, Value: value})
-		case "minLength":
-			items = append(items, &yamlmeta.MapItem{Key: minLenProp, Value: value})
-		case "maxLength":
-			items = append(items, &yamlmeta.MapItem{Key: maxLenProp, Value: value})
-		case "oneOf":
-			items = append(items, &yamlmeta.MapItem{Key: enumProp, Value: value})
+
+	if value, found := validation.HasSimpleMinLength(); found {
+		containedValue := schemaVal.GetValueType()
+		switch containedValue.(type) {
+		case *ArrayType:
+			items = append(items, &yamlmeta.MapItem{Key: minItemsProp, Value: value})
+		case *MapType:
+			items = append(items, &yamlmeta.MapItem{Key: minPropertiesProp, Value: value})
+		default:
+			if containedValue.String() == "string" {
+				items = append(items, &yamlmeta.MapItem{Key: minLenProp, Value: value})
+			}
 		}
+	}
+	if value, found := validation.HasSimpleMaxLength(); found {
+		containedValue := schemaVal.GetValueType()
+		switch containedValue.(type) {
+		case *ArrayType:
+			items = append(items, &yamlmeta.MapItem{Key: maxItemsProp, Value: value})
+		case *MapType:
+			items = append(items, &yamlmeta.MapItem{Key: maxPropertiesProp, Value: value})
+		default:
+			if containedValue.String() == "string" {
+				items = append(items, &yamlmeta.MapItem{Key: maxLenProp, Value: value})
+			}
+		}
+	}
+	if value, found := validation.HasSimpleMin(); found {
+		items = append(items, &yamlmeta.MapItem{Key: minProp, Value: value})
+	}
+	if value, found := validation.HasSimpleMax(); found {
+		items = append(items, &yamlmeta.MapItem{Key: maxProp, Value: value})
+	}
+	if value, found := validation.HasSimpleOneOf(); found {
+		items = append(items, &yamlmeta.MapItem{Key: enumProp, Value: value})
 	}
 	return items
 }
 
-func (o *OpenAPIDocument) openAPITypeFor(astType *ScalarType) string {
+func (*OpenAPIDocument) openAPITypeFor(astType *ScalarType) string {
 	switch astType.ValueType {
 	case StringType:
 		return "string"

@@ -37,7 +37,7 @@ func (b jsonModule) Encode(thread *starlark.Thread, f *starlark.Builtin, args st
 		return starlark.None, fmt.Errorf("expected exactly one argument")
 	}
 	allowedKWArgs := map[string]struct{}{
-		"indent": {},
+		"indent":      {},
 		"escape_html": {},
 	}
 	if err := core.CheckArgNames(kwargs, allowedKWArgs); err != nil {

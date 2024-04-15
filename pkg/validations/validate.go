@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 
 	"carvel.dev/ytt/pkg/filepos"
@@ -55,51 +54,6 @@ type validationKwargs struct {
 	notNull    bool
 	oneNotNull starlark.Value // valid values are either starlark.Sequence or starlark.Bool
 	oneOf      starlark.Sequence
-}
-
-// ValidationMap returns a map of the validationKwargs and their values.
-func (v NodeValidation) ValidationMap() map[string]interface{} {
-	validations := make(map[string]interface{})
-
-	if v.kwargs.minLength != nil {
-		value, _ := v.kwargs.minLength.Int64()
-		validations["minLength"] = value
-	}
-	if v.kwargs.maxLength != nil {
-		value, _ := v.kwargs.maxLength.Int64()
-		validations["maxLength"] = value
-	}
-	if v.kwargs.min != nil {
-		value, _ := strconv.Atoi(v.kwargs.min.String())
-		validations["min"] = value
-	}
-	if v.kwargs.max != nil {
-		value, _ := strconv.Atoi(v.kwargs.max.String())
-		validations["max"] = value
-	}
-	if v.kwargs.oneOf != nil {
-		enum := []interface{}{}
-		iter := starlark.Iterate(v.kwargs.oneOf)
-		defer iter.Done()
-		var x starlark.Value
-		for iter.Next(&x) {
-			var val interface{}
-			switch x.Type() {
-			case "string":
-				val, _ = strconv.Unquote(x.String())
-			case "int":
-				val, _ = strconv.Atoi(x.String())
-			default:
-				val = x.String()
-			}
-
-			enum = append(enum, val)
-		}
-
-		validations["oneOf"] = enum
-	}
-
-	return validations
 }
 
 // Run takes a root Node, and threadName, and validates each Node in the tree.
@@ -152,6 +106,90 @@ func (a *validationRun) VisitWithParent(value yamlmeta.Node, parent yamlmeta.Nod
 	}
 
 	return nil
+}
+
+// HasSimpleMinLength indicates presence of min length validation and its associated value.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleMinLength() (int64, bool) {
+	if v.kwargs.when != nil {
+		return 0, false
+	}
+	if v.kwargs.minLength != nil {
+		value, ok := v.kwargs.minLength.Int64()
+		if ok {
+			return value, true
+		}
+	}
+	return 0, false
+}
+
+// HasSimpleMaxLength indicates presence of max length validation and its associated value.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleMaxLength() (int64, bool) {
+	if v.kwargs.when != nil {
+		return 0, false
+	}
+	if v.kwargs.maxLength != nil {
+		value, ok := v.kwargs.maxLength.Int64()
+		if ok {
+			return value, true
+		}
+	}
+	return 0, false
+}
+
+// HasSimpleMin indicates presence of min validation and its associated value.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleMin() (interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
+	if v.kwargs.min != nil {
+		value, err := core.NewStarlarkValue(v.kwargs.min).AsGoValue()
+		if err == nil {
+			return value, true
+		}
+	}
+	return nil, false
+}
+
+// HasSimpleMax indicates presence of max validation and its associated value.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleMax() (interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
+	if v.kwargs.max != nil {
+		value, err := core.NewStarlarkValue(v.kwargs.max).AsGoValue()
+		if err == nil {
+			return value, true
+		}
+	}
+	return nil, false
+}
+
+// HasSimpleOneOf indicates presence of one-of validation and its allowed values.
+// Returns false if validation is conditional (via when=).
+func (v NodeValidation) HasSimpleOneOf() ([]interface{}, bool) {
+	if v.kwargs.when != nil {
+		return nil, false
+	}
+	if v.kwargs.oneOf != nil {
+		enum := []interface{}{}
+		iter := starlark.Iterate(v.kwargs.oneOf)
+		defer iter.Done()
+		var x starlark.Value
+		for iter.Next(&x) {
+			value, err := core.NewStarlarkValue(x).AsGoValue()
+			if err == nil {
+				enum = append(enum, value)
+			} else {
+				return nil, false
+			}
+		}
+		return enum, true
+	}
+	return nil, false
 }
 
 // Validate runs the assertions in the rules with the node's value as arguments IF
