@@ -317,7 +317,7 @@ func TestJsonOutput(t *testing.T) {
 
 func TestPlaygroundExamplesExecuteWithoutError(t *testing.T) {
 	t.Run("Basics", func(t *testing.T) {
-		filepath.WalkDir("../../examples/playground/basics", func(path string, d fs.DirEntry, err error) error {
+		filepath.WalkDir("../../examples/playground/basics", func(path string, d fs.DirEntry, _ error) error {
 			if !d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -336,7 +336,7 @@ func TestPlaygroundExamplesExecuteWithoutError(t *testing.T) {
 		})
 	})
 	t.Run("Overlays", func(t *testing.T) {
-		filepath.WalkDir("../../examples/playground/overlays", func(path string, d fs.DirEntry, err error) error {
+		filepath.WalkDir("../../examples/playground/overlays", func(path string, d fs.DirEntry, _ error) error {
 			if !d.IsDir() {
 				return filepath.SkipDir
 			}

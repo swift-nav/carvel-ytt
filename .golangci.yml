@@ -2,7 +2,6 @@ linters:
   enable:
     - goheader
     - revive
-    - deadcode
     - unused
   disable-all: true
 # all available settings of specific linters
@@ -12,11 +11,16 @@ linters-settings:
       regexp:
         copyright-year: 20[0-9][0-9]
     template-path: code-header-template.txt
+  revive:
+    enable-all: true
+    rules:
+    - name: dot-imports
+      disabled: true
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-use-default: false
   new-from-rev: bd77aced0a1cd6d6f3ecd3ed04c1832e1c513ab0
 run:
-  skip-dirs:
+  exclude-dirs:
     - pkg/yamlmeta/internal

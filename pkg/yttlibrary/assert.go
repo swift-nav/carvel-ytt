@@ -316,7 +316,7 @@ func (m AssertModule) OneNotNull(_ *starlark.Thread, _ *starlark.Builtin, args s
 }
 
 func (m AssertModule) oneNotNullCheck(keys starlark.Sequence) core.StarlarkFunc {
-	return func(thread *starlark.Thread, f *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	return func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
 		if args.Len() != 1 {
 			return starlark.None, fmt.Errorf("check: got %d arguments, want %d", args.Len(), 1)
 		}
