@@ -156,7 +156,7 @@ func (m MathModule) AsModule() starlark.StringDict {
 // newUnaryBuiltin wraps a unary floating-point Go function
 // as a Starlark built-in that accepts int or float arguments.
 func (m MathModule) newUnaryBuiltin(name string, fn func(float64) float64) *starlark.Builtin {
-	return starlark.NewBuiltin(name, m.warnOnCall(core.ErrWrapper(func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	return starlark.NewBuiltin(name, m.warnOnCall(core.ErrWrapper(func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
 		if args.Len() != 1 {
 			return starlark.None, fmt.Errorf("expected exactly one argument")
 		}
@@ -173,7 +173,7 @@ func (m MathModule) newUnaryBuiltin(name string, fn func(float64) float64) *star
 // newBinaryBuiltin wraps a binary floating-point Go function
 // as a Starlark built-in that accepts int or float arguments.
 func (m MathModule) newBinaryBuiltin(name string, fn func(float64, float64) float64) *starlark.Builtin {
-	return starlark.NewBuiltin(name, m.warnOnCall(core.ErrWrapper(func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	return starlark.NewBuiltin(name, m.warnOnCall(core.ErrWrapper(func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
 		if args.Len() != 2 {
 			return starlark.None, fmt.Errorf("expected exactly two arguments")
 		}
