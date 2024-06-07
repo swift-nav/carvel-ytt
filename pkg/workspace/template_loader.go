@@ -149,7 +149,7 @@ func (l *TemplateLoader) EvalPlainYAML(file *files.File) (*yamlmeta.DocumentSet,
 
 	docSet, err := yamlmeta.NewDocumentSetFromBytes(fileBs, docSetOpts)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshaling YAML template '%s': %s", file.RelativePath(), err)
+		return nil, fmt.Errorf("Unmarshaling YAML template '%s': %s", file.Description(), err)
 	}
 
 	return docSet, nil
