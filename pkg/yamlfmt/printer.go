@@ -45,7 +45,7 @@ func (p *Printer) print(val interface{}, ws whitespace, writer *writer) {
 		for i, item := range typedVal.Items {
 			// TODO deal with first empty doc
 			meta := p.printMeta(item, ws, writer, i == 0)
-			if i != 0 || len(meta.Suffix) > 0 {
+			if (i > 0 && i < len(typedVal.Items)-1) || len(meta.Suffix) > 0 {
 				writer.AddContent(writerChunk{
 					Indent:  ws.Indent,
 					Content: "---" + meta.Suffix,
