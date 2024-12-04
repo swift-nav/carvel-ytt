@@ -1,6 +1,6 @@
 module carvel.dev/ytt
 
-go 1.23.3
+go 1.23.4
 
 require (
 	github.com/BurntSushi/toml v1.2.1
